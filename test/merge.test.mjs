@@ -31,3 +31,11 @@ test("delete vs modify conflicts", () => {
   const { conflicts } = merge(base, mine, theirs);
   assert.equal(conflicts[0].type, "delete-vs-modify");
 });
+
+test("both insert at same spot conflicts", () => {
+  const base = tl([clip("A", 0, 10), clip("C", 0, 10)]);
+  const mine = tl([clip("A", 0, 10), clip("M", 0, 5), clip("C", 0, 10)]);
+  const theirs = tl([clip("A", 0, 10), clip("T", 0, 5), clip("C", 0, 10)]);
+  const { conflicts } = merge(base, mine, theirs);
+  assert.equal(conflicts[0].type, "same-spot");
+});
