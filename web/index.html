@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cardboard: Diff view</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0f1115; color: #e6e6e6; margin: 0; padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #8b93a1; font-size: 13px; margin-bottom: 16px; }
+  select { background: #1a1d24; color: #e6e6e6; border: 1px solid #333a46; padding: 6px 10px; border-radius: 6px; font-size: 14px; }
+  .lane { margin: 18px 0; }
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #8b93a1; margin-bottom: 6px; }
+  .track { display: flex; gap: 3px; overflow-x: auto; padding: 8px; background: #161920; border-radius: 8px; min-height: 56px; }
+  .clip { flex: none; height: 48px; border-radius: 6px; padding: 6px 8px; box-sizing: border-box;
+          display: flex; flex-direction: column; justify-content: space-between; cursor: default; }
+  .clip b { font-size: 14px; }
+  .clip small { font-size: 11px; opacity: .9; min-height: 13px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 14px 0; font-size: 12px; color: #8b93a1; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  ul { list-style: none; padding: 0; margin: 8px 0 0; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  li { padding: 6px 10px; border-left: 4px solid; margin-bottom: 4px; background: #161920; border-radius: 0 6px 6px 0; }
+  .none { color: #8b93a1; font-style: italic; }
+</style>
+</head>
+<body>
+  <h1>Timeline diff</h1>
+  <div class="sub">What changed between two save points. Hover a clip for details.</div>
+  <select id="scenario"></select>
+  <div class="legend" id="legend"></div>
+  <div id="lanes"></div>
+  <div class="label">Changes</div>
+  <ul id="ops"></ul>
+
+<script type="module">
+import { diff, describe } from "../src/diff.mjs";
+
+// ---------- sample data ----------
+const clip = (id, inn, out, extra = {}) => ({ id, asset: "sha256:" + id, in: inn, out, ...extra });
+const tl = (clips) => ({ tracks: [{ id: "V1", clips }] });
+
+const scenarios = {
+  "Trim + insert": {
+    a: tl([clip("A", 0, 120), clip("B", 0, 80), clip("C", 0, 60)]),
+    b: tl([clip("A", 0, 100), clip("B", 0, 50), clip("M", 0, 30), clip("C", 0, 60)]),
+  },
+  "Move + remove": {
+    a: tl([clip("A", 0, 60), clip("B", 0, 40), clip("C", 0, 50), clip("D", 0, 30)]),
+    b: tl([clip("C", 0, 50), clip("A", 0, 60), clip("B", 0, 40)]),
+  },
+  "Effect change": {
+    a: tl([clip("A", 0, 70, { effect: "blur" }), clip("B", 0, 50)]),
+    b: tl([clip("A", 0, 70, { effect: "none" }), clip("B", 5, 50)]),
+  },
+};
+
+// ---------- look & feel ----------
+const COLORS = {
+  same: "#3a3f4b", added: "#2ea043", removed: "#da3633",
+  trimmed: "#d29922", moved: "#388bfd", changed: "#a371f7",
+};
+const PRIORITY = ["removed", "added", "moved", "trimmed", "changed"]; // which color wins if a clip has several ops
+const SCALE = 2.5; // pixels per frame
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// ---------- rendering ----------
+function laneHTML(title, clips, byClip, showTag) {
+  const blocks = clips.map((c) => {
+    const ops = byClip[c.id] || [];
+    const type = PRIORITY.find((t) => ops.some((o) => o.type === t)) || "same";
+    const width = Math.max(28, (c.out - c.in) * SCALE);
+    const tag = !showTag ? "" : ops.filter((o) => o.type === "trimmed")
+      .map((o) => `${o.delta > 0 ? "+" : ""}${o.delta}f`).join(" ");
+    const tip = ops.map(describe).join("\n") || "unchanged";
+    return `<div class="clip" style="width:${width}px;background:${COLORS[type]}" title="${esc(tip)}">
+      <b>${esc(c.id)}</b><small>${esc(tag)}</small></div>`;
+  }).join("");
+  return `<div class="lane"><div class="label">${title}</div><div class="track">${blocks}</div></div>`;
+}
+
+function render(name) {
+  const { a, b } = scenarios[name];
+  const ops = diff(a, b);
+
+  // group ops by clip id so each block can look up its own changes
+  const byClip = {};
+  ops.forEach((o) => (byClip[o.clip] ||= []).push(o));
+
+  document.getElementById("lanes").innerHTML =
+    laneHTML("Before", a.tracks[0].clips, byClip, false) +
+    laneHTML("After", b.tracks[0].clips, byClip, true);
+
+  document.getElementById("ops").innerHTML = ops.length
+    ? ops.map((o) => `<li style="border-color:${COLORS[o.type]}">${esc(describe(o))}</li>`).join("")
+    : `<li class="none">No changes</li>`;
+}
+
+// ---------- wire up ----------
+document.getElementById("legend").innerHTML = Object.entries(COLORS)
+  .map(([k, v]) => `<span><span class="dot" style="background:${v}"></span>${k}</span>`).join("");
+
+const select = document.getElementById("scenario");
+select.innerHTML = Object.keys(scenarios).map((n) => `<option>${esc(n)}</option>`).join("");
+select.addEventListener("change", () => render(select.value));
+render(select.value);
+</script>
+</body>
+</html>
