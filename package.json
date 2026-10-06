@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node --test",
-    "demo": "node examples/demo.mjs"
+    "demo": "node examples/demo.mjs",
+    "diff-demo": "node examples/diff-demo.mjs"
   },
   "keywords": [],
   "author": "",
