@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cardboard: Resolve</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0f1115; color: #e6e6e6; margin: 0; padding: 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #8b93a1; font-size: 13px; margin-bottom: 16px; }
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #8b93a1; margin: 18px 0 6px; }
+  .card { background: #161920; border: 1px solid #333a46; border-radius: 8px; padding: 12px; margin-bottom: 10px; max-width: 560px; }
+  .card.done { border-color: #2ea043; }
+  .bar { height: 14px; border-radius: 4px; margin: 4px 0; font-size: 11px; line-height: 14px; padding-left: 6px; }
+  button { background: #1f2430; color: #e6e6e6; border: 1px solid #333a46; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin: 6px 6px 0 0; }
+  button:hover, button.on { background: #388bfd; border-color: #388bfd; }
+  input { width: 70px; background: #0f1115; color: #e6e6e6; border: 1px solid #333a46; border-radius: 6px; padding: 6px; }
+  .track { display: flex; gap: 3px; overflow-x: auto; padding: 8px; background: #161920; border-radius: 8px; }
+  .clip { flex: none; height: 48px; border-radius: 6px; padding: 6px 8px; box-sizing: border-box; background: #3a3f4b; border: 2px solid transparent; font-size: 14px; }
+  .clip.open { border-color: #da3633; }
+  .clip.fixed { border-color: #2ea043; }
+  pre { background: #161920; padding: 12px; border-radius: 8px; font-size: 12px; overflow: auto; }
+</style>
+</head>
+<body>
+  <h1>Combine "maya" into main</h1>
+  <div class="sub" id="status"></div>
+  <div class="label">Pending choices</div><div id="pending"></div>
+  <div class="label">Combined timeline</div><div id="lane"></div>
+  <div class="label">Result</div><pre id="out"></pre>
+
+<script type="module">
+import { merge } from "../src/merge.mjs";
+import { resolveAll, keyOf } from "../src/resolve.mjs";
+
+const clip = (id, inn, out) => ({ id, asset: "sha256:" + id, in: inn, out });
+const tl = (clips) => ({ tracks: [{ id: "V1", clips }] });
+const base   = tl([clip("A", 0, 120), clip("B", 0, 80), clip("C", 0, 60)]);
+const mine   = tl([clip("A", 0, 100), clip("B", 0, 50), clip("M", 0, 30), clip("C", 0, 60)]);
+const theirs = tl([clip("A", 10, 120), clip("B", 0, 60), clip("C", 0, 60), clip("T", 0, 40)]);
+
+const { timeline, conflicts } = merge(base, mine, theirs);
+const decisions = {};
+const S = 2.5; // pixels per frame
+const find = (t, id) => t.tracks[0].clips.find((c) => c.id === id);
+
+function lengthOf(c, field, v) {          // resulting clip length if this value is chosen
+  return field === "out" ? v - c.in : field === "in" ? c.out - v : null;
+}
+
+function card(c) {
+  const key = keyOf(c), d = decisions[key], k = `data-key="${key}"`;
+  const btn = (pick, label) => `<button ${k} data-pick="${pick}" class="${d?.pick === pick ? "on" : ""}">${label}</button>`;
+  if (c.type === "delete-vs-modify")
+    return `<div class="card ${d ? "done" : ""}"><b>Clip ${c.clip}</b>: deleted on one side, edited on the other
+      <div>${btn("keep", "Keep clip")}${btn("delete", "Delete clip")}</div></div>`;
+  const clipNow = find(timeline, c.clip);
+  const bar = (who, v, color) => {
+    const len = lengthOf(clipNow, c.field, v);
+    return len == null ? "" : `<div class="bar" style="width:${len * S}px;background:${color}">${who} ${len}f</div>`;
+  };
+  return `<div class="card ${d ? "done" : ""}"><b>Clip ${c.clip}</b>: ${c.field} set to ${c.mine} vs ${c.theirs}
+    ${bar("Mine", c.mine, "#388bfd")}${bar("Theirs", c.theirs, "#d29922")}
+    <div>${btn("mine", "Mine")}${btn("theirs", "Theirs")}
+    <input type="number" id="in-${key}" placeholder="custom"><button ${k} data-pick="custom">Use custom</button></div></div>`;
+}
+
+function render() {
+  const final = resolveAll(timeline, conflicts, decisions);
+  const state = {};                                   // clip id -> "open" | "fixed"
+  conflicts.forEach((c) => (state[c.clip] = decisions[keyOf(c)] ? "fixed" : "open"));
+  const open = conflicts.filter((c) => !decisions[keyOf(c)]).length;
+
+  document.getElementById("status").textContent =
+    `${conflicts.length} conflict(s) need a choice. Everything else merged automatically. ${open} left.`;
+  document.getElementById("pending").innerHTML = conflicts.map(card).join("");
+  document.getElementById("lane").innerHTML = `<div class="track">` +
+    final.tracks[0].clips.map((c) =>
+      `<div class="clip ${state[c.id] || ""}" style="width:${Math.max(28, (c.out - c.in) * S)}px">
+        <b>${c.id}</b>${state[c.id] === "open" ? " ?" : ""}</div>`).join("") + `</div>`;
+  document.getElementById("out").textContent =
+    open ? `Resolve ${open} more to finish.` : JSON.stringify(final, null, 2);
+}
+
+document.addEventListener("click", (e) => {
+  const { key, pick } = e.target.dataset;
+  if (!key) return;
+  if (pick === "custom") {
+    const v = parseInt(document.getElementById("in-" + key).value, 10);
+    if (Number.isNaN(v)) return;
+    decisions[key] = { pick, value: v };
+  } else decisions[key] = { pick };
+  render();
+});
+render();
+</script>
+</body>
+</html>
