@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "demo": "node examples/demo.mjs",
-    "diff-demo": "node examples/diff-demo.mjs"
+    "diff-demo": "node examples/diff-demo.mjs",
+    "resolve-flow": "node examples/resolve-flow-demo.mjs"
   },
   "keywords": [],
   "author": "",

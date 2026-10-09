@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { merge } from "./merge.mjs";
+import { resolveAll, keyOf } from "./resolve.mjs";
 
 // Canonical JSON: keys sorted, so identical data always gives an identical hash,
 // no matter what order the keys were written in.
@@ -134,6 +135,19 @@ export class Store {
     });
     this._setTip(id);
     return { status: conflicts.length ? "needs-choices" : "combined", id, conflicts };
+  }
+
+  // RESOLVE (git: committing a merge resolution). Applies the editor's choices
+  // on top of a conflicted save point as a NEW save point. Undecided conflicts carry over.
+  resolveCombine(decisions, message = "Resolved choices") {
+    if (!this.tip) throw new Error("Nothing to resolve: no save points yet");
+    const tip = this.get(this.tip);
+    if (!tip.conflicts.length) throw new Error("Nothing to resolve: this save point has no conflicts");
+    const timeline = resolveAll(tip.timeline, tip.conflicts, decisions);
+    const remaining = tip.conflicts.filter((c) => !decisions[keyOf(c)]);
+    const id = this._put({ timeline, parents: [tip.id], message, conflicts: remaining });
+    this._setTip(id);
+    return id;
   }
 
   // GO BACK TO HERE (git: reset). Old save points stay on disk, nothing is deleted.
