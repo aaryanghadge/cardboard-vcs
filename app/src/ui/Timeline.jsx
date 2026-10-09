@@ -1,6 +1,24 @@
-import { OPS, PX, len, seconds, signed, statusOf, FPS } from "../lib.js";
+import { OPS, PX as DEFAULT_PX, len, seconds, signed, statusOf, FPS } from "../lib.js";
 
-export default function Timeline({ label, clips, byClip, selected, onSelect, showDeltas }) {
+const HATCH = "repeating-linear-gradient(135deg, rgba(255,255,255,.35) 0 3px, transparent 3px 7px)";
+
+// Frames cut (Before lane) or gained (After lane) by a trim, as spans inside the clip.
+function spans(c, ops, lane) {
+  const out = [];
+  for (const o of ops) {
+    if (o.type !== "trimmed") continue;
+    if (lane === "before") {
+      if (o.field === "out" && o.delta < 0) out.push({ left: c.out + o.delta - c.in, frames: -o.delta, cut: true });
+      if (o.field === "in" && o.delta > 0) out.push({ left: 0, frames: o.delta, cut: true });
+    } else {
+      if (o.field === "out" && o.delta > 0) out.push({ left: c.out - o.delta - c.in, frames: o.delta, cut: false });
+      if (o.field === "in" && o.delta < 0) out.push({ left: 0, frames: -o.delta, cut: false });
+    }
+  }
+  return out;
+}
+
+export default function Timeline({ label, lane, clips, byClip, selected, onSelect, px = DEFAULT_PX }) {
   const total = clips.reduce((n, c) => n + len(c), 0);
   const wholeSeconds = Math.floor(total / FPS);
 
@@ -12,11 +30,11 @@ export default function Timeline({ label, clips, byClip, selected, onSelect, sho
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-edge bg-panel">
-        <div style={{ width: Math.max(total * PX, 1) + 24 }} className="p-3">
+        <div style={{ width: Math.max(total * px, 1) + 24 }} className="p-3">
           <div className="relative mb-1 h-4" aria-hidden="true">
             {Array.from({ length: wholeSeconds + 1 }, (_, i) => (
               <span key={i} className="absolute top-0 border-l border-edge pl-1 text-[10px] leading-4 text-dim"
-                style={{ left: i * FPS * PX }}>{i}s</span>
+                style={{ left: i * FPS * px }}>{i}s</span>
             ))}
           </div>
 
@@ -25,16 +43,21 @@ export default function Timeline({ label, clips, byClip, selected, onSelect, sho
               const ops = byClip[c.id] ?? [];
               const status = statusOf(ops);
               const isSel = selected === c.id;
-              const deltas = showDeltas ? ops.filter((o) => o.type === "trimmed") : [];
+              const deltas = lane === "after" ? ops.filter((o) => o.type === "trimmed") : [];
               return (
                 <button key={c.id} onClick={() => onSelect(isSel ? null : c.id)}
                   aria-pressed={isSel}
                   title={`${c.name}: ${OPS[status].label}`}
-                  style={{ width: len(c) * PX }}
-                  className={`h-16 shrink-0 overflow-hidden border-l-2 border-r-2 px-2 py-1.5 text-left transition-colors
+                  style={{ width: len(c) * px }}
+                  className={`relative h-[4.5rem] shrink-0 overflow-hidden border-r-2 border-r-panel border-t-[3px] px-2 py-1.5 text-left transition-colors
                     ${OPS[status].block} ${isSel ? "ring-2 ring-inset ring-white" : "hover:brightness-110"}`}>
-                  <div className="truncate text-sm font-medium">{c.name}</div>
-                  <div className="flex flex-wrap gap-x-2 text-xs text-white/70">
+                  {spans(c, ops, lane).map((s, i) => (
+                    <span key={i} aria-hidden="true"
+                      className={`absolute inset-y-0 ${s.cut ? "bg-rose-950/70" : "bg-emerald-950/50"}`}
+                      style={{ left: s.left * px, width: s.frames * px, backgroundImage: HATCH }} />
+                  ))}
+                  <div className="relative line-clamp-2 break-words text-sm font-medium leading-tight">{c.name}</div>
+                  <div className="relative flex flex-wrap gap-x-2 text-xs text-white/70">
                     <span>{len(c)}f</span>
                     {deltas.map((o, i) => <span key={i} className="text-amber-100">{signed(o.delta)}f</span>)}
                   </div>

@@ -3,12 +3,12 @@ export const PX = 2.4; // pixels per frame on the timeline
 
 // One place that defines how each kind of change looks and reads.
 export const OPS = {
-  added:   { label: "Added",   sym: "+", text: "text-emerald-300", block: "bg-emerald-700 border-emerald-400" },
-  removed: { label: "Removed", sym: "−", text: "text-rose-300",    block: "bg-rose-800 border-rose-400" },
-  moved:   { label: "Moved",   sym: "↕", text: "text-sky-300",     block: "bg-sky-800 border-sky-400" },
-  trimmed: { label: "Trimmed", sym: "✂", text: "text-amber-300",   block: "bg-amber-700 border-amber-400" },
-  changed: { label: "Changed", sym: "≠", text: "text-violet-300",  block: "bg-violet-800 border-violet-400" },
-  same:    { label: "Unchanged", sym: "", text: "text-dim",        block: "bg-raise border-edge" },
+  added:   { label: "Added",   sym: "+", text: "text-emerald-300", block: "bg-emerald-900 border-t-emerald-400" },
+  removed: { label: "Removed", sym: "−", text: "text-rose-300",    block: "bg-rose-900 border-t-rose-400" },
+  moved:   { label: "Moved",   sym: "↕", text: "text-sky-300",     block: "bg-sky-900 border-t-sky-400" },
+  trimmed: { label: "Trimmed", sym: "~", text: "text-amber-300",   block: "bg-amber-900 border-t-amber-400" },
+  changed: { label: "Changed", sym: "≠", text: "text-violet-300",  block: "bg-violet-900 border-t-violet-400" },
+  same:    { label: "Unchanged", sym: "", text: "text-dim",        block: "bg-raise border-t-edge" },
 };
 export const OP_ORDER = ["added", "removed", "moved", "trimmed", "changed"];
 

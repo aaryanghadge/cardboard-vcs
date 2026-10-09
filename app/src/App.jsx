@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { diff } from "@engine/diff.mjs";
 import { SAVE_POINTS } from "./data.js";
 import { totalOf, seconds, signed } from "./lib.js";
@@ -8,6 +8,20 @@ import Inspector from "./ui/Inspector.jsx";
 
 const byId = Object.fromEntries(SAVE_POINTS.map((s) => [s.id, s]));
 const clipsOf = (sp) => sp.timeline.tracks.flatMap((t) => t.clips);
+
+// Tracks an element's width so both timelines can share one scale and fill the space.
+function useWidth() {
+  const ref = useRef(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, width];
+}
 
 function Select({ label, value, onChange }) {
   return (
@@ -26,6 +40,7 @@ export default function App() {
   const [headId, setHeadId] = useState("sp2");
   const [selected, setSelected] = useState(null);
   const [hidden, setHidden] = useState(new Set());
+  const [colRef, colWidth] = useWidth();
 
   const base = byId[baseId], head = byId[headId];
   const ops = useMemo(() => diff(base.timeline, head.timeline), [base, head]);
@@ -38,6 +53,8 @@ export default function App() {
   const nameOf = (id) => allClips.find((c) => c.id === id)?.name ?? id;
 
   const change = totalOf(head.timeline) - totalOf(base.timeline);
+  const longest = Math.max(totalOf(base.timeline), totalOf(head.timeline), 1);
+  const px = colWidth ? Math.min(6, Math.max(1, (colWidth - 28) / longest)) : undefined; // pixels per frame, shared by both lanes
   const pick = (setter) => (v) => { setter(v); setSelected(null); };
   const toggle = (t) => setHidden((h) => { const n = new Set(h); n.has(t) ? n.delete(t) : n.add(t); return n; });
 
@@ -53,7 +70,7 @@ export default function App() {
       </header>
 
       <main className="grid flex-1 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="min-w-0 space-y-6 p-6">
+        <div ref={colRef} className="min-w-0 space-y-6 p-6">
           <div className="flex flex-wrap items-end gap-3">
             <Select label="Compare" value={baseId} onChange={pick(setBaseId)} />
             <button onClick={() => { const b = baseId; setBaseId(headId); setHeadId(b); setSelected(null); }}
@@ -66,8 +83,8 @@ export default function App() {
             </p>
           </div>
 
-          <Timeline label="Before" clips={beforeClips} byClip={byClip} selected={selected} onSelect={setSelected} showDeltas={false} />
-          <Timeline label="After" clips={afterClips} byClip={byClip} selected={selected} onSelect={setSelected} showDeltas />
+          <Timeline label="Before" lane="before" px={px} clips={beforeClips} byClip={byClip} selected={selected} onSelect={setSelected} />
+          <Timeline label="After" lane="after" px={px} clips={afterClips} byClip={byClip} selected={selected} onSelect={setSelected} />
 
           <Inspector id={selected}
             before={beforeClips.find((c) => c.id === selected)}
