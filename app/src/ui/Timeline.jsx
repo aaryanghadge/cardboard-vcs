@@ -61,8 +61,8 @@ export default function Timeline({ label, lane, clips, byClip = {}, selected, on
                         className={`absolute inset-y-0 ${s.cut ? "bg-rose-950/70" : "bg-emerald-950/50"}`}
                         style={{ left: s.left * px, width: s.frames * px, backgroundImage: HATCH }} />
                     ))}
-                    <div className="relative line-clamp-2 break-words text-sm font-medium leading-tight">{c.name}</div>
-                    <div className="relative flex flex-wrap gap-x-2 text-xs text-white/70">
+                    <div className="relative line-clamp-2 break-words text-sm font-medium leading-tight [text-shadow:0_1px_2px_rgb(0_0_0/0.75)]">{c.name}</div>
+                    <div className="relative flex flex-wrap gap-x-2 text-xs text-white/80 [text-shadow:0_1px_2px_rgb(0_0_0/0.75)]">
                       <span>{len(c)}f</span>
                       {deltas.map((o, i) => <span key={i} className="text-amber-100">{signed(o.delta)}f</span>)}
                       {isFlag && <span className="text-rose-200">needs a choice</span>}

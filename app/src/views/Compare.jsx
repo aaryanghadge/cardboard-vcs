@@ -4,6 +4,8 @@ import { clipsOf, groupByClip, makeNameOf, totalOf, seconds, signed } from "../l
 import Timeline from "../ui/Timeline.jsx";
 import ChangeList from "../ui/ChangeList.jsx";
 import Inspector from "../ui/Inspector.jsx";
+import Legend from "../ui/Legend.jsx";
+import Player from "../ui/Player.jsx";
 import { useWidth, fitPx } from "../ui/useFit.js";
 
 function Select({ label, value, onChange, options }) {
@@ -27,6 +29,7 @@ export default function Compare({ store, version, ids, onIds }) {
 
   const [selected, setSelected] = useState(null);
   const [hidden, setHidden] = useState(new Set());
+  const [showPlay, setShowPlay] = useState(false);
   const [colRef, colWidth] = useWidth();
 
   if (!options.length) return <main className="p-6 text-sm text-dim">No save points yet.</main>;
@@ -57,6 +60,8 @@ export default function Compare({ store, version, ids, onIds }) {
           </p>
         </div>
 
+        <Legend />
+
         <Timeline label="Before" lane="before" px={px} clips={beforeClips} byClip={byClip} selected={selected} onSelect={setSelected} />
         <Timeline label="After" lane="after" px={px} clips={afterClips} byClip={byClip} selected={selected} onSelect={setSelected} />
 
@@ -64,6 +69,22 @@ export default function Compare({ store, version, ids, onIds }) {
           before={beforeClips.find((c) => c.id === selected)}
           after={afterClips.find((c) => c.id === selected)}
           ops={ops.filter((o) => o.clip === selected)} />
+
+        <section aria-label="Preview">
+          <button onClick={() => setShowPlay((v) => !v)} aria-expanded={showPlay}
+            className="rounded-md border border-edge px-3 py-1.5 text-sm text-dim hover:text-white">
+            {showPlay ? "Hide preview" : "Preview both cuts"}
+          </button>
+          {showPlay && (
+            <>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <Player label="Before" timeline={base.timeline} />
+                <Player label="After" timeline={head.timeline} />
+              </div>
+              <p className="mt-2 text-xs text-dim">Stand-in frames for now. Real footage plugs in here later.</p>
+            </>
+          )}
+        </section>
       </div>
 
       <aside className="border-t border-edge bg-panel p-5 lg:border-l lg:border-t-0">

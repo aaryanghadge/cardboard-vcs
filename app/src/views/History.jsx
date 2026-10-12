@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { diff } from "@engine/diff.mjs";
-import { ago, clipsOf, makeNameOf, LANE_COLORS } from "../lib.js";
+import { ago, clipsOf, groupByClip, makeNameOf, LANE_COLORS } from "../lib.js";
 import ChangeList from "../ui/ChangeList.jsx";
+import MiniLane from "../ui/MiniLane.jsx";
 
 const ROW = 64, LANE_W = 22, PAD = 18;
 
@@ -83,6 +84,8 @@ function Detail({ store, sp, isCutTip, onCompare, onChanged, onResolve }) {
         )}
       </div>
       {!isTip && <p className="mt-2 text-xs text-dim">Going back moves {store.currentCut} only. Nothing is deleted, so you can come forward again.</p>}
+
+      <div className="mt-5"><MiniLane label="This save point" clips={clipsOf(sp)} byClip={groupByClip(ops)} /></div>
 
       <div className="mt-6">
         {parent ? (

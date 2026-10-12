@@ -52,9 +52,9 @@ Open the address Vite prints (usually http://localhost:5173). The app starts wit
 Suggested tour (about two minutes, see `docs/demo-script.md`):
 
 1. **History:** the branch graph. Click a save point to see what it changed.
-2. **Combine:** bring in `color-pass` (merges with no choices), then `maya-intro` (one choice, everything else automatic).
+2. **Combine:** bring in `color-pass` (merges with no choices), then `maya-intro` (one choice, everything else automatic). Press **Watch the 5 seconds around it** to play both outcomes side by side, with the moment in question marked.
 3. **Edit:** make an Alt cut, trim a clip, save a point. Do the same on `main` and combine to create your own conflict.
-4. **Compare:** any two save points, side by side, with the cut frames hatched.
+4. **Compare:** any two save points, side by side, with the cut frames hatched and a legend that explains the colors. **Preview both cuts** plays them.
 
 ## How it is built
 
@@ -63,6 +63,7 @@ src/
   merge.mjs         three-way merge over clip IDs
   diff.mjs          semantic diff: added, removed, moved, trimmed, changed
   resolve.mjs       apply a person's choice to a conflict (pure functions)
+  player.mjs        which clip is on screen at a frame, and the 5 seconds around a choice
   store.mjs         save points, Alt cuts, combine, resolve, go back
   hash.mjs          SHA-256 in plain JS so IDs match in Node and the browser
   storage.mjs       in-memory and browser (localStorage) storage
@@ -80,17 +81,17 @@ examples/           small runnable demos
 ## Tests
 
 ```bash
-npm test                 # engine: 42 tests
-cd app && npm test       # UI flows in a simulated browser: 15 tests
+npm test                 # engine: 48 tests
+cd app && npm test       # UI flows and the player in a simulated browser: 24 tests
 ```
 
-The UI tests drive the real app: combining cleanly, each of the three kinds of choice, deciding now or later, editing, forking, going back, and persistence across a reload.
+The UI tests drive the real app: combining cleanly, each of the three kinds of choice, watching a choice before deciding, deciding now or later, editing, forking, going back, previewing, and persistence across a reload. The player is tested in real time with fake timers.
 
 ## What is not built yet
 
 This is a working prototype of the hard part, not a finished product.
 
-- **No real media.** Clips reference media by hash, but nothing plays yet. A preview of the seconds around a choice is the most valuable next step.
+- **No real footage yet.** The preview player works (play, scrub, the 5 seconds around a choice) but draws stand-in frames. Plugging real media into it is the most valuable next step.
 - **No importer.** The timeline format is designed to map to OpenTimelineIO so Premiere, Resolve and Final Cut projects can be brought in. That adapter is not written.
 - **Single user, single browser.** Presence ("Maya is editing 0:30 to 1:10"), section claims, review and approval before a combine all need a server.
 - **One track in the editor.** The engine merges any number of tracks. The Edit screen shows the first.

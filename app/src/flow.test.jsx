@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, within, cleanup } from "@testing-library/react";
+import { render, screen, within, cleanup, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App.jsx";
 
@@ -194,6 +194,9 @@ describe("Cardboard app", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: /Bring in/ }), "cleanup");
     expect(screen.getByText(/removed and edited/)).toBeTruthy();
     expect(screen.getByText(/cleanup removed this clip while main edited it/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Watch the 5 seconds around it" }));
+    expect(screen.getByRole("img", { name: /^With the clip:/ })).toBeTruthy();
+    expect(screen.getByRole("img", { name: /^Without it:/ })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Remove the clip" }));
     await user.click(screen.getByRole("button", { name: "Combine into main" }));
     expect(inList().getByText("Combine cleanup")).toBeTruthy();
@@ -223,10 +226,56 @@ describe("Cardboard app", () => {
     await user.click(tab("Combine"));
     await user.selectOptions(screen.getByRole("combobox", { name: /Bring in/ }), "stings");
     expect(screen.getByText(/added in the same spot/)).toBeTruthy();
-    const choices = screen.getAllByRole("button", { name: /, then / });
+    await user.click(screen.getByRole("button", { name: "Watch the 5 seconds around it" }));
+    const players = screen.getAllByRole("img", { name: /, then / });
+    expect(players.length).toBe(2);
+    const names = players.map((p) => p.getAttribute("aria-label")).join(" | ");
+    expect(names).toMatch(/Sting A, then Sting B/);
+    expect(names).toMatch(/Sting B, then Sting A/);
+    const choices = screen.getAllByRole("button", { name: /^Sting [AB], then Sting [AB]$/ });
     expect(choices.length).toBe(2);
     await user.click(choices[1]);
     await user.click(screen.getByRole("button", { name: "Combine into main" }));
     expect(inList().getByText("Combine stings")).toBeTruthy();
+  });
+
+  it("Combine: watch the moment shows both versions of a choice", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(tab("Combine"));
+    await user.selectOptions(screen.getByRole("combobox", { name: /Bring in/ }), "maya-intro");
+    await user.click(screen.getByRole("button", { name: "Watch the 5 seconds around it" }));
+    expect(screen.getByRole("img", { name: /^main's:/ })).toBeTruthy();
+    expect(screen.getByRole("img", { name: /^maya-intro's:/ })).toBeTruthy();
+    expect(screen.getByText(/Stand-in frames for now/)).toBeTruthy();
+    // scrubbing one version doesn't touch the other
+    const [a, b] = screen.getAllByRole("slider");
+    fireEvent.change(a, { target: { value: a.max } });
+    expect(a.value).toBe(a.max);
+    expect(b.value).not.toBe(b.max);
+    await user.click(screen.getByRole("button", { name: "Hide the preview" }));
+    expect(screen.queryByRole("img", { name: /^main's:/ })).toBeNull();
+  });
+
+  it("Compare: the legend explains the stripes, and both cuts can be previewed", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(tab("Compare"));
+    const legend = within(screen.getByRole("list", { name: "Legend" }));
+    expect(legend.getByText("Frames cut")).toBeTruthy();
+    expect(legend.getByText("Frames gained")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Preview both cuts" }));
+    expect(screen.getByRole("img", { name: /^Before:/ })).toBeTruthy();
+    expect(screen.getByRole("img", { name: /^After:/ })).toBeTruthy();
+  });
+
+  it("History: the detail panel shows a mini timeline of the selected save point", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    expect(screen.getByText("This save point")).toBeTruthy();
+    await user.click(inList().getByText("Shorter intro, product shot"));
+    const lane = screen.getByText("This save point").parentElement;
+    expect(within(lane).getByText("Product shot")).toBeTruthy();
+    expect(within(lane).getByText("Intro")).toBeTruthy();
   });
 });

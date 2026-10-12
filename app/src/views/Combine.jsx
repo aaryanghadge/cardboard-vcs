@@ -1,11 +1,23 @@
 import { useMemo, useState } from "react";
 import { diff } from "@engine/diff.mjs";
-import { resolveAll, keyOf } from "@engine/resolve.mjs";
+import { resolve, resolveAll, keyOf } from "@engine/resolve.mjs";
 import { clipsOf, timelineClips, groupByClip, makeNameOf, totalOf } from "../lib.js";
 import Timeline from "../ui/Timeline.jsx";
 import OpList from "../ui/OpList.jsx";
 import ConflictCard from "../ui/ConflictCard.jsx";
 import { useWidth, fitPx } from "../ui/useFit.js";
+
+// The two ways a choice could go, each as a full timeline you can watch.
+function watchOptions({ timeline, conflicts, decisions, conflict, labels, nameOf }) {
+  const others = conflicts.filter((x) => x !== conflict);
+  const base = resolveAll(timeline, others, decisions);
+  const picks = conflict.type === "same-field"
+    ? [["mine", `${labels.mine}'s`], ["theirs", `${labels.theirs}'s`]]
+    : conflict.type === "delete-vs-modify"
+      ? [["keep", "With the clip"], ["delete", "Without it"]]
+      : [["keep", `${nameOf(conflict.ids[1])}, then ${nameOf(conflict.ids[0])}`], ["swap", `${nameOf(conflict.ids[0])}, then ${nameOf(conflict.ids[1])}`]];
+  return picks.map(([pick, label]) => ({ label, timeline: resolve(base, conflict, { pick }) }));
+}
 
 // Choices left open by an earlier combine on the current cut.
 function OpenChoices({ store, version, onChanged }) {
@@ -26,6 +38,8 @@ function OpenChoices({ store, version, onChanged }) {
           <ConflictCard key={keyOf(c)} conflict={c} decision={decisions[keyOf(c)]} nameOf={nameOf}
             labels={{ mine: store.currentCut, theirs: "the other cut" }}
             clip={clips.find((x) => x.id === c.clip)}
+            watch={watchOptions({ timeline: tip.timeline, conflicts: tip.conflicts, decisions, conflict: c, nameOf,
+              labels: { mine: store.currentCut, theirs: "the other cut" } })}
             onDecide={(d) => setDecisions((m) => ({ ...m, [keyOf(c)]: d }))} />
         ))}
       </div>
@@ -99,6 +113,8 @@ export default function Combine({ store, version, onChanged, onDone }) {
                   <ConflictCard key={keyOf(c)} conflict={c} decision={decisions[keyOf(c)]} nameOf={nameOf}
                     labels={{ mine: current, theirs: source }}
                     clip={mergedClips.find((x) => x.id === c.clip)}
+                    watch={watchOptions({ timeline: plan.timeline, conflicts: plan.conflicts, decisions, conflict: c, nameOf,
+                      labels: { mine: current, theirs: source } })}
                     onDecide={(d) => setDecisions((m) => ({ ...m, [keyOf(c)]: d }))} />
                 ))}
               </div>

@@ -1,11 +1,12 @@
 import { useState } from "react";
+import Moment from "./Moment.jsx";
 
 const BAR_PX = 2.2;
 const fieldName = (f) => (f === "in" ? "in point" : f === "out" ? "out point" : f);
 const show = (v) => String(v ?? "none");
 
 // One choice an editor has to make. `labels` says who "mine" and "theirs" are.
-export default function ConflictCard({ conflict, decision, onDecide, nameOf, labels, clip }) {
+export default function ConflictCard({ conflict, decision, onDecide, nameOf, labels, clip, watch }) {
   const [custom, setCustom] = useState("");
   const pick = decision?.pick;
 
@@ -80,6 +81,7 @@ export default function ConflictCard({ conflict, decision, onDecide, nameOf, lab
       </div>
       <div className="mt-1">{body}</div>
       <div className="mt-3 flex flex-wrap items-center gap-2">{actions}</div>
+      {watch && <Moment conflict={conflict} options={watch} />}
     </div>
   );
 }

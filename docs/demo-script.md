@@ -23,7 +23,8 @@ Record the screen with the app open on **History** (use **Reset demo** first). S
 - Combine again, bring in **maya-intro**.
 - Show the two lists: what Maya changed, what main changed meanwhile.
 - "Everything merged on its own. Maya's intro trim and Priya's trim apply together, because they touch different ends of the clip. The only thing left is the interview's out point: 50 versus 60."
-- Show the two bars. Click **Use maya-intro's**, then **Combine into main**.
+- Show the two bars, then click **Watch the 5 seconds around it**. Two players appear, one per outcome, with the moment marked.
+- "Editors decide by watching, not by reading numbers." (Frames are stand-ins for now.) Click **Use maya-intro's**, then **Combine into main**.
 
 ## 1:30 Merge never blocks (15 seconds)
 
@@ -32,4 +33,4 @@ Record the screen with the app open on **History** (use **Reset demo** first). S
 
 ## 1:45 Close (15 seconds)
 
-"The engine is 42 tests, the app has 15 flow tests. Next: preview the seconds around a choice, and import real Premiere and Resolve timelines through OpenTimelineIO."
+"The engine has 48 tests, the app has 24. Next: preview the seconds around a choice, and import real Premiere and Resolve timelines through OpenTimelineIO."
