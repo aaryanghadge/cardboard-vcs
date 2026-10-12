@@ -1,6 +1,6 @@
 import { OPS, OP_ORDER, sentence } from "../lib.js";
 
-export default function ChangeList({ ops, hidden, onToggle, nameOf, selected, onSelect }) {
+export default function ChangeList({ ops, hidden, onToggle, nameOf, selected, onSelect, emptyText = "These two save points are identical." }) {
   const counts = Object.fromEntries(OP_ORDER.map((t) => [t, ops.filter((o) => o.type === t).length]));
   const visible = ops.filter((o) => !hidden.has(o.type));
 
@@ -22,7 +22,7 @@ export default function ChangeList({ ops, hidden, onToggle, nameOf, selected, on
       </div>
 
       {ops.length === 0 ? (
-        <p className="text-sm text-dim">These two save points are identical.</p>
+        <p className="text-sm text-dim">{emptyText}</p>
       ) : visible.length === 0 ? (
         <p className="text-sm text-dim">Every change type is hidden. Turn one back on above.</p>
       ) : (

@@ -1,5 +1,5 @@
 export const FPS = 24;
-export const PX = 2.4; // pixels per frame on the timeline
+export const PX = 2.4; // default pixels per frame on a timeline
 
 // One place that defines how each kind of change looks and reads.
 export const OPS = {
@@ -12,14 +12,34 @@ export const OPS = {
 };
 export const OP_ORDER = ["added", "removed", "moved", "trimmed", "changed"];
 
+export const LANE_COLORS = ["#d6b48a", "#7aa2f7", "#9ece6a", "#bb9af7", "#f7768e", "#7dcfff"];
+
 export const len = (c) => c.out - c.in;
-export const totalOf = (tl) => tl.tracks.flatMap((t) => t.clips).reduce((n, c) => n + len(c), 0);
+export const timelineClips = (tl) => tl.tracks.flatMap((t) => t.clips);
+export const clipsOf = (sp) => timelineClips(sp.timeline);
+export const totalOf = (tl) => timelineClips(tl).reduce((n, c) => n + len(c), 0);
 export const seconds = (frames) => (frames / FPS).toFixed(1) + "s";
 export const signed = (n) => (n > 0 ? "+" : "") + n;
+
+export function ago(time, now = Date.now()) {
+  const m = Math.round((now - time) / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} hr ago`;
+  const d = Math.round(h / 24);
+  return `${d} day${d === 1 ? "" : "s"} ago`;
+}
 
 // The first op type found (in priority order) decides a clip's color.
 export function statusOf(ops = []) {
   return OP_ORDER.find((t) => ops.some((o) => o.type === t)) ?? "same";
+}
+
+export function groupByClip(ops) {
+  const by = {};
+  ops.forEach((o) => (by[o.clip] ||= []).push(o));
+  return by;
 }
 
 export function sentence(op, nameOf) {
@@ -31,3 +51,8 @@ export function sentence(op, nameOf) {
     default:        return `${op.field} changed from ${String(op.from ?? "none")} to ${String(op.to ?? "none")}`;
   }
 }
+
+export const makeNameOf = (...timelines) => {
+  const all = timelines.flatMap(timelineClips);
+  return (id) => all.find((c) => c.id === id)?.name ?? id;
+};

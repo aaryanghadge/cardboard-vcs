@@ -9,6 +9,7 @@ export default function Inspector({ before, after, ops, id }) {
     );
   }
   const clip = after ?? before;
+  if (!clip) return null;
   const rows = [];
   if (before && after) {
     for (const k of new Set([...Object.keys(before), ...Object.keys(after)])) {
@@ -17,6 +18,7 @@ export default function Inspector({ before, after, ops, id }) {
     }
   }
   const status = ops.length ? ops[0].type : "same";
+  const moved = ops.find((o) => o.type === "moved");
 
   return (
     <div className="rounded-lg border border-edge bg-panel p-4">
@@ -51,9 +53,7 @@ export default function Inspector({ before, after, ops, id }) {
           </tbody>
         </table>
       )}
-      {ops.some((o) => o.type === "moved") && (
-        <p className="mt-3 text-sm text-sky-300">Moved from position {ops.find((o) => o.type === "moved").from + 1} to {ops.find((o) => o.type === "moved").to + 1}.</p>
-      )}
+      {moved && <p className="mt-3 text-sm text-sky-300">Moved from position {moved.from + 1} to {moved.to + 1}.</p>}
     </div>
   );
 }

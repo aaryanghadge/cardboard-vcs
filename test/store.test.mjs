@@ -4,10 +4,11 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store, hashOf } from "../src/store.mjs";
+import { FsStorage } from "../src/storage-fs.mjs";
 
 const clip = (id, inn, out) => ({ id, asset: "sha256:" + id, in: inn, out });
 const tl = (clips) => ({ tracks: [{ id: "V1", clips }] });
-const mk = () => new Store(mkdtempSync(join(tmpdir(), "cb-")));
+const mk = () => new Store(new FsStorage(mkdtempSync(join(tmpdir(), "cb-"))));
 
 test("hash ignores key order", () => {
   assert.equal(hashOf({ a: 1, b: 2 }), hashOf({ b: 2, a: 1 }));

@@ -6,6 +6,7 @@ import { resolve, resolveAll, keyOf } from "../src/resolve.mjs";
 const clip = (id, inn, out) => ({ id, asset: "sha256:" + id, in: inn, out });
 const tl = (clips) => ({ tracks: [{ id: "V1", clips }] });
 const outOf = (t, id) => t.tracks[0].clips.find((c) => c.id === id)?.out;
+const order = (t) => t.tracks[0].clips.map((c) => c.id).join("");
 
 const fieldCase = () =>
   merge(tl([clip("B", 0, 80)]), tl([clip("B", 0, 50)]), tl([clip("B", 0, 60)]));
@@ -24,6 +25,20 @@ test("delete-vs-modify: keep or delete", () => {
   assert.equal(conflicts[0].type, "delete-vs-modify");
   assert.equal(resolve(timeline, conflicts[0], { pick: "keep" }).tracks[0].clips.length, 1);
   assert.equal(resolve(timeline, conflicts[0], { pick: "delete" }).tracks[0].clips.length, 0);
+});
+
+test("same-spot: keep the merged order or swap it", () => {
+  const { timeline, conflicts } = merge(
+    tl([clip("A", 0, 10), clip("C", 0, 10)]),
+    tl([clip("A", 0, 10), clip("M", 0, 5), clip("C", 0, 10)]),
+    tl([clip("A", 0, 10), clip("T", 0, 5), clip("C", 0, 10)])
+  );
+  assert.equal(conflicts[0].type, "same-spot");
+  const before = order(timeline);
+  assert.equal(order(resolve(timeline, conflicts[0], { pick: "keep" })), before);
+  const swapped = order(resolve(timeline, conflicts[0], { pick: "swap" }));
+  assert.notEqual(swapped, before);
+  assert.equal([...swapped].sort().join(""), [...before].sort().join(""));
 });
 
 test("resolve does not mutate the input timeline", () => {

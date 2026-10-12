@@ -1,14 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { Store } from "../src/store.mjs";
+import { MemoryStorage } from "../src/storage.mjs";
 import { keyOf } from "../src/resolve.mjs";
 
 const clip = (id, inn, out) => ({ id, asset: "sha256:" + id, in: inn, out });
 const tl = (clips) => ({ tracks: [{ id: "V1", clips }] });
-const mk = () => new Store(mkdtempSync(join(tmpdir(), "cb-")));
+const mk = () => new Store(new MemoryStorage());
 const outOf = (t, id) => t.tracks[0].clips.find((c) => c.id === id).out;
 
 function conflicted(baseClips, mainClips, mayaClips) {

@@ -24,12 +24,13 @@ test("same field changed differently conflicts", () => {
   assert.equal(conflicts[0].type, "same-field");
 });
 
-test("delete vs modify conflicts", () => {
+test("delete vs modify conflicts and says who deleted", () => {
   const base = tl([clip("A", 0, 120)]);
   const mine = tl([]);
   const theirs = tl([clip("A", 0, 100)]);
   const { conflicts } = merge(base, mine, theirs);
   assert.equal(conflicts[0].type, "delete-vs-modify");
+  assert.equal(conflicts[0].deletedBy, "mine");
 });
 
 test("both insert at same spot conflicts", () => {
