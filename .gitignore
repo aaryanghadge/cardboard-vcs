@@ -4,3 +4,4 @@ node_modules/
 .cardboard/
 *.mp4
 *.mov
+dist/

@@ -1,8 +1,6 @@
 // Semantic diff between two timelines, keyed by stable clip IDs.
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-// Longest common subsequence of two arrays of IDs.
-// Items in the LCS "stayed in place"; shared items outside it are "moved".
 function lcs(a, b) {
   const n = a.length, m = b.length;
   const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
@@ -33,17 +31,14 @@ export function diff(a, b) {
     const aIds = A.map((c) => c.id);
     const bIds = B.map((c) => c.id);
 
-    // removed: in A, not in B
     for (const id of aIds)
       if (!bi[id]) ops.push({ type: "removed", track: tid, clip: id, index: aIds.indexOf(id) });
 
-    // added: in B, not in A
     bIds.forEach((id, idx) => {
       if (!ai[id])
         ops.push({ type: "added", track: tid, clip: id, index: idx, after: bIds[idx - 1] ?? null });
     });
 
-    // moved: shared clips that are not part of the longest common subsequence
     const commonA = aIds.filter((id) => bi[id]);
     const commonB = bIds.filter((id) => ai[id]);
     const stay = new Set(lcs(commonA, commonB));
@@ -51,7 +46,6 @@ export function diff(a, b) {
       if (!stay.has(id))
         ops.push({ type: "moved", track: tid, clip: id, from: aIds.indexOf(id), to: bIds.indexOf(id) });
 
-    // trimmed / changed: shared clips whose fields differ
     for (const id of commonB) {
       const x = ai[id], y = bi[id];
       if (eq(x, y)) continue;
@@ -67,7 +61,6 @@ export function diff(a, b) {
   return ops;
 }
 
-// Human-readable line for an op (what an editor would read).
 export function describe(op) {
   switch (op.type) {
     case "added":

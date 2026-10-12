@@ -12,7 +12,9 @@ function mergeClip(b, m, t) {
   if (eq(m, t)) return { clip: m };
   if (eq(b, m)) return { clip: t };
   if (eq(b, t)) return { clip: m };
-  if (!m || !t) return { clip: m ?? t, conflicts: [{ type: "delete-vs-modify" }] };
+  if (!m || !t) {
+    return { clip: m ?? t, conflicts: [{ type: "delete-vs-modify", deletedBy: !m ? "mine" : "theirs" }] };
+  }
   const clip = {}, conflicts = [];
   const keys = new Set([...Object.keys(b ?? {}), ...Object.keys(m), ...Object.keys(t)]);
   for (const k of keys) {

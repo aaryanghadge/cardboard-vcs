@@ -2,11 +2,12 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Store } from "../src/store.mjs";
+import { FsStorage } from "../src/storage-fs.mjs";
 
 const clip = (id, inn, out) => ({ id, asset: "sha256:" + id, in: inn, out });
 const tl = (clips) => ({ tracks: [{ id: "V1", clips }] });
 
-const s = new Store(mkdtempSync(join(tmpdir(), "cb-")));
+const s = new Store(new FsStorage(mkdtempSync(join(tmpdir(), "cb-"))));
 
 s.save(tl([clip("A", 0, 120), clip("B", 0, 80), clip("C", 0, 60)]), "Base cut");
 
